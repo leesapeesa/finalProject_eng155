@@ -8,7 +8,7 @@ TARGETS = finalProject stepperMotor
 
 all: $(TARGETS)
 
-finalProject: finalProject.c EasyPIO.h
+finalProject: finalProject.cpp EasyPIO.h
 	$(C) $(GCC_FLAGS) -o $@ $^
 
 stepperMotor: stepperMotor.cpp EasyPIO.h
