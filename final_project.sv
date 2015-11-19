@@ -1,19 +1,58 @@
-// I'm too lazy to write everything in quartus rn, so just brainstorming
-// what to write for each module.
-
 module final_project(input logic clk, reset,
+							input logic sclk,
+							input logic sdi,
+							output logic sdo,
+							input logic load,
+							output logic done,
                     output logic [3:0] stepperWires,
 						  output logic laserControl);
-		oscillateMirror om(clk, reset, stepperWires, laserControl);
+		logic [31:0] note, action;
+		logic [7:0] currentNote;
+		logic [7:0] strings;
+		logic readADC;
+		spi_raspi_slave s(sclk, sdi, sdo, done, note, action);
+		oscillateMirror om(clk, reset, stepperWires, currentNote, laserControl, readADC);
+		calculateNotes cn (clk, reset, readADC, currentNote, strings);
+endmodule
+
+// SPI interface for our final project.
+// Shifts in the action we would like to perform with
+// our FPGA, for now, 32 bits where the first bit is start
+// and everything else is zero.
+// and then shifts out a note also represented by 32 bits
+// for now. 
+module spi_raspi_slave(input logic sck,
+			  input logic sdi,
+			  output logic sdo, // note to send back
+			  input logic done,
+			  input logic [31:0] note, // calculated by other modules
+			  output logic [31:0] action); // action for the FPGA to do
+		logic sdodelayed, wasdone;
+		logic [31:0] noteCaptured;
+		
+		always_ff @(posedge sck)
+			if (!wasdone) {noteCaptured, action} = {note, action[30:0], sdi};
+			else          {noteCaptured, action} = {noteCaptured[30:0], action, sdi};
+		
+		always_ff @(negedge sck) begin
+			wasdone = done;
+			sdodelayed = noteCaptured[30];
+		end
+		
+		// when done is first asserted, shift out msb before clock edge
+		assign sdo = (done & !wasdone) ? noteCaptured[30] : sdodelayed;
 endmodule
 
 // The motor moves around 0.9 degrees per
 // clock cycle.
 module oscillateMirror(input logic clk, reset,
-		       output logic [3:0] stepperWires,
-		       output logic laserControl);
+						  output logic [3:0] stepperWires,
+						  output logic [7:0] currentNote,
+						  output logic laserControl,
+						  output logic readADC);
   logic [17:0] counter; //15 is max
-  logic [3:0] turns;
+  logic [3:0] turns; // 4 stepper motor
+  logic [7:0] notes; // Currently only 8 notes.
   logic [31:0] cycleCount;
   logic forward;
   always_ff @(posedge clk)
@@ -21,6 +60,7 @@ module oscillateMirror(input logic clk, reset,
     if (reset)
     begin
       turns <= 4'b0001;
+		notes <= 8'b0000_0001;
       counter <= 32'b0;
       cycleCount <= 32'b0;
 		forward <= 1;
@@ -36,7 +76,8 @@ module oscillateMirror(input logic clk, reset,
     if (counter == 0)
     begin
 		//turns <= {turns[2:0], turns[3]};
-      turns <= forward ? {turns[2:0], turns[3]}: {turns[0], turns[3:1]};
+      turns <= forward ? {turns[2:0], turns[3]} : {turns[0], turns[3:1]};
+		notes <= forward ? {notes[6:0], notes[7]} : {notes[0], notes[7:1]};
       // If msb of turns is 1, then the cycle is about to repeat
       // debatable how we want to count cycleCount.
       // right now, if motor is moving forward, cycleCount will
@@ -48,15 +89,31 @@ module oscillateMirror(input logic clk, reset,
   end
 
   // Turn off the laser when the motor is turning.
-//  assign laserControl = (counter[15] == 1);
-  assign laserControl = (counter[9]);
+  assign laserControl = (counter[9]);// should be twice as fast as motor stepping.
+  assign readADC = (counter == 0);
   assign stepperWires = turns;
+  assign currentNote = notes;
   
 endmodule
 
-
+/// ISNT CONNCETED TO ADC
+module calculateNotes(input logic clk, reset,
+							 input logic readADC,
+							 input logic [7:0] stringToCheck,
+							 output logic [7:0] strings,
+							 input logic [9:0] ADCvalue);
+	logic [9:0] capturedADCvalue;
+	always_ff @(posedge clk)
+		if (readADC) begin
+			capturedADCvalue = ADCvalue;
+			strings[stringToCheck] = (capturedADCvalue > 42); // made up threshold
+		end
+		
+endmodule
 
 // TODO: Implement SPI between PI and FPGA
+
+// TODO: Implement SPI between ADC and FPGA
 
 // Mopule implements a synchronous trigger that is high once per 315kHz cycle
 module spiPulseGen(input clk,
@@ -103,11 +160,6 @@ module ADCreader(input clk, reset, start,
 	assign adcReading = shiftIn[10:1];
 		
 endmodule
-	
-		
-		
-	
-// TODO: Laser multiplexing + motor movement
 
 // TODO: Determine which "string" was hit
 
