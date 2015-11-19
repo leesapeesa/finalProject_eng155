@@ -12,7 +12,7 @@ endmodule
 module oscillateMirror(input clk, reset,
 						  output [3:0] stepperWires,
 						  output laserControl);
-  logic [15:0] counter;
+  logic [15:0] counter; //15 is max
   logic [3:0] turns;
   logic [31:0] cycleCount;
   logic forward;
@@ -21,7 +21,7 @@ module oscillateMirror(input clk, reset,
     if (reset)
     begin
       turns <= 4'b0001;
-      counter <= 16'b0;
+      counter <= 32'b0;
       cycleCount <= 32'b0;
 		forward <= 1;
     end
@@ -42,14 +42,13 @@ module oscillateMirror(input clk, reset,
       // right now, if motor is moving forward, cycleCount will
       // increase. (maybe rename to degreesMoved)
       //cycleCount <= forward ? cycleCount + 1: cycleCount - 1;
-		counter <= 16'b0;
 		cycleCount <= cycleCount + 1'b1;
     end
     counter <= counter + 1'b1;
   end
 
   // Turn off the laser when the motor is turning.
-  assign laserControl = ~(counter == 0);
+//  assign laserControl = (counter[15] == 1);
   assign stepperWires = turns;
   
 endmodule
