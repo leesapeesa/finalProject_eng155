@@ -1,18 +1,18 @@
 // I'm too lazy to write everything in quartus rn, so just brainstorming
 // what to write for each module.
 
-module final_project(input clk, reset,
-                    output [3:0] stepperWires,
-						  output laserControl);
+module final_project(input logic clk, reset,
+                    output logic [3:0] stepperWires,
+						  output logic laserControl);
 		oscillateMirror om(clk, reset, stepperWires, laserControl);
 endmodule
 
 // The motor moves around 0.9 degrees per
 // clock cycle.
-module oscillateMirror(input clk, reset,
-						  output [3:0] stepperWires,
-						  output laserControl);
-  logic [15:0] counter; //15 is max
+module oscillateMirror(input logic clk, reset,
+		       output logic [3:0] stepperWires,
+		       output logic laserControl);
+  logic [17:0] counter; //15 is max
   logic [3:0] turns;
   logic [31:0] cycleCount;
   logic forward;
@@ -49,6 +49,7 @@ module oscillateMirror(input clk, reset,
 
   // Turn off the laser when the motor is turning.
 //  assign laserControl = (counter[15] == 1);
+  assign laserControl = (counter[9]);
   assign stepperWires = turns;
   
 endmodule
