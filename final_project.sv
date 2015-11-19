@@ -58,8 +58,55 @@ endmodule
 
 // TODO: Implement SPI between PI and FPGA
 
-// TODO: Implement SPI between ADC and FPGA
+// Mopule implements a synchronous trigger that is high once per 315kHz cycle
+module spiPulseGen(input clk,
+						output spiTrigger, spiClk);
+	logic [6:0] cnt;
+	always_ff @(posedge clk)
+	begin
+		cnt<=cnt+1;
+	end
+	assign spiTrigger = (cnt==7'b1000000);
+	assign spiClk = cnt[6];
+endmodule
 
+
+/// SPI ADC read module, assert start to begin communication
+// Then bring start low, wait for dataReady flag to go high (~2300clk cycles)
+// Then, valid data will be in dataReady and communication can begin again
+module ADCreader(input clk, reset, start,
+						input miso,
+						output mosi, CSLow, spiClk,
+						output [11:0] adcReading,
+						output dataReady);
+
+	logic spiClkTrigger, moduleOn;
+	spiPulseGen spg(clk,spiClkTrigger,spiClk);
+	
+	// The module be turned on when start is asserted, and off when data is ready
+	always_ff @(posedge clk) 
+		moduleOn <= (dataReady? start:moduleOn)&(~reset);
+		
+	
+	logic [3:0] spiBitCounter; // Counts up to 15 then back to zero
+	logic [15:0] shiftOut,shiftIn;
+	
+	always_ff @(posedge clk) if (spiClkTrigger && moduleOn)
+	begin
+		spiBitCounter <= reset?0:spiBitCounter+1; 
+		shiftOut <= reset? 16'h7000:{shiftOut[0],shiftOut[15:1]}; //7000 for channel 0
+		shiftIn <= {shiftIn[15:1],miso};
+	end
+	assign dataReady = (spiBitCounter == 4'b1111);	
+	assign CSLow = moduleOn;
+	assign mosi = shiftOut[0];
+	assign adcReading = shiftIn[10:1];
+		
+endmodule
+	
+		
+		
+	
 // TODO: Laser multiplexing + motor movement
 
 // TODO: Determine which "string" was hit
