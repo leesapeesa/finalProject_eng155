@@ -8,20 +8,11 @@ module final_project(input logic clk, reset, sclk, sdi,
 		logic [2:0] currentNote;
 		logic [7:0] [7:0] strings;
 		logic [7:0] [7:0] fakeStrings;
-		//always_ff @(posedge clk) begin if(reset) begin
-		//	for (int i=0; i<8; i++) begin
-		//		fakeStrings[i] <= i;
-		//	end
-		//	end
-		//end
 		logic dataReady, trigger;
-		//scaledClk skk(clk,trigger);
 		spi_raspi_slave2 srs(reset, sclk, sdi, sdo, strings, action);
 		oscillateMirror om(clk, reset, stepperWires, currentNote, trigger, laserControl);
 		updateStrings un(clk, reset, adcMiso, adcMosi, CS, spiClk, trigger, currentNote, strings);
 endmodule
-
-
 
 // SPI interface for our final project.
 // After reset has been hit at some point, when master drives sck,
@@ -83,9 +74,6 @@ module oscillateMirror(input logic clk, reset,
 		// Every four step counts, we want to turn on the laser.
 		// essentially checking for mod 4.     
 		if (stepCount[1:0] == 0) begin
-			//laserControl <= (counter > 2 && counter < 1000);
-			// ADC can't be help for too long.
-			//ADCload <= (counter > 2 && counter < 1000);
 			notes <= forward ? notes + 1'b1 : notes - 1'b1;
 		end
 		counter <= counter + 1'b1;
@@ -95,81 +83,6 @@ module oscillateMirror(input logic clk, reset,
 	assign currentNote = notes;
 	assign laserControl = ~((stepCount[1:0] == 2'b0) && (counter > 2 && counter < 200000));
 	assign ADCload = (stepCount[1:0] == 2'b0) && (counter > 2 && counter < 200000);
-	/*
-	logic [15:0] counter; //15 is max
-	logic [3:0] turns; // 4 stepper motor
-	logic [2:0] notes; // Currently only 8 notes.
-	logic [5:0] stepCount;
-	logic forward;
-	always_ff @(posedge clk)
-	  begin
-	  if (reset) begin
-			turns <= 4'b0001;
-			notes <= 3'b001;
-			counter <= 16'b0;
-			stepCount <= 5'b0;
-			forward <= 1;
-		end
-	 
-	// This is the value you want to change if you want the mirror to move
-	// through a bigger angle
-	if (stepCount == 16) begin
-			stepCount <= 5'b0;
-			forward <= ~forward;
-	end
-	 
-	if (counter == 0)
-	begin
-		turns <= forward ? {turns[2:0], turns[3]} : {turns[0], turns[3:1]};
-		//notes <= stepCount[1] ? notes + 1'b1 : notes - 1'b1; // we only want to shift notes every 2 cycles.
-		stepCount <= stepCount + 1'b1;
-	end
-	counter <= counter + 1'b1;
-	end
-
-	// Turn off the laser when the motor is turning.
-	assign laserControl = stepCount[0];
-	assign stepperWires = turns;
-	assign currentNote = notes;
-  
-  logic [15:0] counter; //15 is max
-  logic [3:0] turns; // 4 stepper motor
-  logic [2:0] notes; // Currently only 8 notes.
-  logic [31:0] cycleCount;
-  logic [1:0] cycleCountDivider;
-  logic forward;
-  always_ff @(posedge clk)
-  begin
-    if (reset)
-    begin
-      turns <= 4'b0001;
-		notes <= 3'b001;
-      counter <= 18'b0;
-      cycleCount <= 32'b0;
-		forward <= 1;
-    end
-	 
-	 // This is the value you want to change if you want the mirror to move
-	 // through a bigger angle
-	 if (cycleCount == 24) begin
-			cycleCount <= 0;
-			forward <= ~forward;
-	 end
-    
-    if (counter == 0)
-    begin
-      turns <= forward ? {turns[2:0], turns[3]} : {turns[0], turns[3:1]};
-		notes <= cycleCount[1] ? notes + 1'b1 : notes - 1'b1; // we only want to shift notes every 2 cycles.
-		cycleCount <= cycleCount + 1'b1;
-    end
-    counter <= counter + 1'b1;
-  end
-
-  // Turn off the laser when the motor is turning.
-  assign laserControl = cycleCount[0];
-  assign stepperWires = turns;
-  assign currentNote = notes;
-  */
 endmodule
 
 // Sends a done signal at 76 Hz ~~ What is done for?
@@ -191,10 +104,6 @@ module updateStrings(input logic clk, reset, miso,
 		if (dataReady&~trigger) strings[holdStringToCheck] <= adcReading[9:2]; 
 	end
 endmodule
-
-// TODO: Implement SPI between PI and FPGA
-
-// TODO: Implement SPI between ADC and FPGA
 
 // Module implements a synchronous trigger that is high once per 315kHz cycle
 module spiPulseGen(input clk,
@@ -260,10 +169,3 @@ module ADCreader(input logic clk, reset, start,
 	assign adcReading = shiftIn[10:1];
 		
 endmodule
-
-
-// TODO: Determine which "string" was hit
-
-// STRETCH: Receive note and duration played
-// STRETCH: Switch between play mode vs playback mode
-// STRETCH: Play only note received
