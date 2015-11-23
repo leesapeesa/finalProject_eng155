@@ -64,9 +64,9 @@ void Harp::updateWeights(){
 void Harp::runHarp(){}
 
 void Harp::testScale() {
-  _noteWeights[] = {0,.33,0,0,.33,0,0,.33};
+  _noteWeights = {0,.33,0,0,.33,0,0,.33};
   playNotes(1000000000,0);
-  _noteWeights[] = {0,0,0,0,0,.5,0,.5};
+  _noteWeights = {0,0,0,0,0,.5,0,.5};
   playNotes(1000000000,0);
   // testing.
 }
