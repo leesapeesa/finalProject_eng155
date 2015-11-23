@@ -1,165 +1,266 @@
-module final_project(input logic clk, reset,
-							input logic sclk,
-							input logic sdi,
+module final_project(input logic clk, reset, sclk, sdi,
 							output logic sdo,
-							input logic load,
-							output logic done,
+							input logic adcMiso, 
+							output logic adcMosi, CS, spiClk,
                     output logic [3:0] stepperWires,
 						  output logic laserControl);
-		logic [31:0] note, action;
-		logic [7:0] currentNote;
-		logic [7:0] strings;
-		logic readADC;
-		spi_raspi_slave s(sclk, sdi, sdo, done, note, action);
-		oscillateMirror om(clk, reset, stepperWires, currentNote, laserControl, readADC);
-		calculateNotes cn (clk, reset, readADC, currentNote, strings);
+		logic [7:0] action;
+		logic [2:0] currentNote;
+		logic [7:0] [7:0] strings;
+		logic [7:0] [7:0] fakeStrings;
+		//always_ff @(posedge clk) begin if(reset) begin
+		//	for (int i=0; i<8; i++) begin
+		//		fakeStrings[i] <= i;
+		//	end
+		//	end
+		//end
+		logic dataReady, trigger;
+		//scaledClk skk(clk,trigger);
+		spi_raspi_slave2 srs(reset, sclk, sdi, sdo, strings, action);
+		oscillateMirror om(clk, reset, stepperWires, currentNote, trigger, laserControl);
+		updateStrings un(clk, reset, adcMiso, adcMosi, CS, spiClk, trigger, currentNote, strings);
 endmodule
+
+
 
 // SPI interface for our final project.
-// Shifts in the action we would like to perform with
-// our FPGA, for now, 32 bits where the first bit is start
-// and everything else is zero.
-// and then shifts out a note also represented by 32 bits
-// for now. 
-module spi_raspi_slave(input logic sck,
+// After reset has been hit at some point, when master drives sck,
+// adc readings for each string are shifted out one by one in order,
+// starting with string 0 bit 7 and ending with string 7 bit 0
+// The last 8 bits of any communication are held in action
+module spi_raspi_slave2(input logic reset, sck,
 			  input logic sdi,
 			  output logic sdo, // note to send back
-			  input logic done,
-			  input logic [31:0] note, // calculated by other modules
-			  output logic [31:0] action); // action for the FPGA to do
-		logic sdodelayed, wasdone;
-		logic [31:0] noteCaptured;
-		
-		always_ff @(posedge sck)
-			if (!wasdone) {noteCaptured, action} = {note, action[30:0], sdi};
-			else          {noteCaptured, action} = {noteCaptured[30:0], action, sdi};
-		
-		always_ff @(negedge sck) begin
-			wasdone = done;
-			sdodelayed = noteCaptured[30];
-		end
-		
-		// when done is first asserted, shift out msb before clock edge
-		assign sdo = (done & !wasdone) ? noteCaptured[30] : sdodelayed;
+			  input logic [7:0] [7:0] strings, // calculated by other modules
+			  output logic [7:0] action); // action for the FPGA to do (last 8 bits sent)
+		logic [2:0] stringState;
+		logic [2:0] whichBit;
+		always_ff @(posedge sck, posedge reset) begin
+			if (reset) begin
+				{stringState,whichBit} <= 6'b0;
+				action <= 1'b0;
+			end
+			else begin 
+				{stringState,whichBit} <= {stringState,whichBit} + 1'b1;
+				action <= {action[6:0], sdi};
+			end
+		end  // We want MSB first, not LSB so we start at bit 7
+		assign sdo = strings[stringState][7-whichBit]; 
 endmodule
 
-// The motor moves around 0.9 degrees per
-// clock cycle.
+// Moves one step at 152 hz when counter size is 18.
 module oscillateMirror(input logic clk, reset,
 						  output logic [3:0] stepperWires,
-						  output logic [7:0] currentNote,
-						  output logic laserControl,
-						  output logic readADC);
-  logic [17:0] counter; //15 is max
+						  output logic [2:0] currentNote,
+						  output logic ADCload,
+						  output logic laserControl);
+
+	logic [17:0] counter; //15 is max
+	logic [3:0] turns; // 4 stepper motor
+	logic [2:0] notes; // Currently only 8 notes.
+	logic [4:0] stepCount;
+	logic forward;
+	always_ff @(posedge clk) begin
+		if (reset) begin
+			turns <= 4'b0001;
+			stepCount <= 5'b0;
+			counter <= 18'b0;
+			notes <= 3'b001;
+			forward <= 1;
+		end
+		
+		if (stepCount == 16) begin
+			stepCount <= 5'b0;
+			forward <= ~forward;
+		end
+		
+		// We slow down the clock using counter.
+		if (counter == 0) begin
+			turns <= forward ? {turns[2:0], turns[3]} : {turns[0], turns[3:1]};
+			stepCount <= stepCount + 1'b1;
+		end
+		
+		// Every four step counts, we want to turn on the laser.
+		// essentially checking for mod 4.     
+		if (stepCount[1:0] == 0) begin
+			//laserControl <= (counter > 2 && counter < 1000);
+			// ADC can't be help for too long.
+			//ADCload <= (counter > 2 && counter < 1000);
+			notes <= forward ? notes + 1'b1 : notes - 1'b1;
+		end
+		counter <= counter + 1'b1;
+	end
+	
+	assign stepperWires = turns;
+	assign currentNote = notes;
+	assign laserControl = ~((stepCount[1:0] == 2'b0) && (counter > 2 && counter < 200000));
+	assign ADCload = (stepCount[1:0] == 2'b0) && (counter > 2 && counter < 200000);
+	/*
+	logic [15:0] counter; //15 is max
+	logic [3:0] turns; // 4 stepper motor
+	logic [2:0] notes; // Currently only 8 notes.
+	logic [5:0] stepCount;
+	logic forward;
+	always_ff @(posedge clk)
+	  begin
+	  if (reset) begin
+			turns <= 4'b0001;
+			notes <= 3'b001;
+			counter <= 16'b0;
+			stepCount <= 5'b0;
+			forward <= 1;
+		end
+	 
+	// This is the value you want to change if you want the mirror to move
+	// through a bigger angle
+	if (stepCount == 16) begin
+			stepCount <= 5'b0;
+			forward <= ~forward;
+	end
+	 
+	if (counter == 0)
+	begin
+		turns <= forward ? {turns[2:0], turns[3]} : {turns[0], turns[3:1]};
+		//notes <= stepCount[1] ? notes + 1'b1 : notes - 1'b1; // we only want to shift notes every 2 cycles.
+		stepCount <= stepCount + 1'b1;
+	end
+	counter <= counter + 1'b1;
+	end
+
+	// Turn off the laser when the motor is turning.
+	assign laserControl = stepCount[0];
+	assign stepperWires = turns;
+	assign currentNote = notes;
+  
+  logic [15:0] counter; //15 is max
   logic [3:0] turns; // 4 stepper motor
-  logic [7:0] notes; // Currently only 8 notes.
+  logic [2:0] notes; // Currently only 8 notes.
   logic [31:0] cycleCount;
+  logic [1:0] cycleCountDivider;
   logic forward;
   always_ff @(posedge clk)
   begin
     if (reset)
     begin
       turns <= 4'b0001;
-		notes <= 8'b0000_0001;
-      counter <= 32'b0;
+		notes <= 3'b001;
+      counter <= 18'b0;
       cycleCount <= 32'b0;
 		forward <= 1;
     end
 	 
 	 // This is the value you want to change if you want the mirror to move
 	 // through a bigger angle
-	 if (cycleCount == 8) begin
+	 if (cycleCount == 24) begin
 			cycleCount <= 0;
 			forward <= ~forward;
 	 end
     
     if (counter == 0)
     begin
-		//turns <= {turns[2:0], turns[3]};
       turns <= forward ? {turns[2:0], turns[3]} : {turns[0], turns[3:1]};
-		notes <= forward ? {notes[6:0], notes[7]} : {notes[0], notes[7:1]};
-      // If msb of turns is 1, then the cycle is about to repeat
-      // debatable how we want to count cycleCount.
-      // right now, if motor is moving forward, cycleCount will
-      // increase. (maybe rename to degreesMoved)
-      //cycleCount <= forward ? cycleCount + 1: cycleCount - 1;
+		notes <= cycleCount[1] ? notes + 1'b1 : notes - 1'b1; // we only want to shift notes every 2 cycles.
 		cycleCount <= cycleCount + 1'b1;
     end
     counter <= counter + 1'b1;
   end
 
   // Turn off the laser when the motor is turning.
-  assign laserControl = (counter[9]);// should be twice as fast as motor stepping.
-  assign readADC = (counter == 0);
+  assign laserControl = cycleCount[0];
   assign stepperWires = turns;
   assign currentNote = notes;
-  
+  */
 endmodule
 
-/// ISNT CONNCETED TO ADC
-module calculateNotes(input logic clk, reset,
-							 input logic readADC,
-							 input logic [7:0] stringToCheck,
-							 output logic [7:0] strings,
-							 input logic [9:0] ADCvalue);
-	logic [9:0] capturedADCvalue;
-	always_ff @(posedge clk)
-		if (readADC) begin
-			capturedADCvalue = ADCvalue;
-			strings[stringToCheck] = (capturedADCvalue > 42); // made up threshold
-		end
-		
+// Sends a done signal at 76 Hz ~~ What is done for?
+// Everytime readADC is high, strings gets updated.
+module updateStrings(input logic clk, reset, miso,
+							output logic mosi, CS, spiClk,
+							input logic trigger,
+							input logic [2:0] stringToCheck,
+							output logic [7:0] [7:0] strings);
+	logic [18:0] counter; // has to be bigger than the clk divider for oscillateMirror.
+	logic [9:0] adcReading;
+	logic dataReady;
+	ADCreader ar(clk,reset,trigger,miso,mosi,CS,spiClk,adcReading,dataReady);
+	logic [2:0] holdStringToCheck;
+	
+	always_ff @(posedge clk) begin
+		holdStringToCheck <= trigger? stringToCheck:holdStringToCheck;
+		// Gets the most significant 8 bits
+		if (dataReady&~trigger) strings[holdStringToCheck] <= adcReading[9:2]; 
+	end
 endmodule
 
 // TODO: Implement SPI between PI and FPGA
 
 // TODO: Implement SPI between ADC and FPGA
 
-// Mopule implements a synchronous trigger that is high once per 315kHz cycle
+// Module implements a synchronous trigger that is high once per 315kHz cycle
 module spiPulseGen(input clk,
 						output spiTrigger, spiClk);
 	logic [6:0] cnt;
 	always_ff @(posedge clk)
 	begin
-		cnt<=cnt+1;
+		cnt<=cnt+1'b1;
 	end
 	assign spiTrigger = (cnt==7'b1000000);
 	assign spiClk = cnt[6];
 endmodule
 
+module scaledClk(input logic clk,
+						output logic reducedClk);
+	logic [13:0] cnt;
+	always_ff @(posedge clk)
+	begin
+		cnt<=cnt+1'b1;
+	end
+	assign reducedClk = (cnt[13:2]==12'b100000000000);
+endmodule
 
 /// SPI ADC read module, assert start to begin communication
 // Then bring start low, wait for dataReady flag to go high (~2300clk cycles)
 // Then, valid data will be in dataReady and communication can begin again
-module ADCreader(input clk, reset, start,
-						input miso,
-						output mosi, CSLow, spiClk,
-						output [11:0] adcReading,
-						output dataReady);
+module ADCreader(input logic clk, reset, start,
+						input logic miso,
+						output logic mosi, CS, spiClk,
+						output logic [9:0] adcReading,
+						output logic dataReady);
 
-	logic spiClkTrigger, moduleOn;
-	spiPulseGen spg(clk,spiClkTrigger,spiClk);
-	
-	// The module be turned on when start is asserted, and off when data is ready
-	always_ff @(posedge clk) 
-		moduleOn <= (dataReady? start:moduleOn)&(~reset);
-		
+	logic spiClkTrigger, moduleOn,spiClkGen;
+	spiPulseGen spg(clk,spiClkTrigger,spiClkGen);
+	assign spiClk = spiClkGen&moduleOn;
 	
 	logic [3:0] spiBitCounter; // Counts up to 15 then back to zero
 	logic [15:0] shiftOut,shiftIn;
-	
-	always_ff @(posedge clk) if (spiClkTrigger && moduleOn)
+	// The module be turned on when start is asserted, and off when data is ready
+	always_ff @(posedge clk) 
 	begin
-		spiBitCounter <= reset?0:spiBitCounter+1; 
-		shiftOut <= reset? 16'h7000:{shiftOut[0],shiftOut[15:1]}; //7000 for channel 0
-		shiftIn <= {shiftIn[15:1],miso};
+		if (reset) 
+		begin 
+			spiBitCounter <= 4'b1111;
+			moduleOn <= 1'b0;
+			shiftOut <= 16'h000F;
+		end
+		else
+		begin
+			if(start) moduleOn<=1'b1;
+			else moduleOn <= (dataReady&spiClkGen? 1'b0:moduleOn);
+			spiBitCounter <= (spiClkTrigger && moduleOn)?(spiBitCounter+1'b1):spiBitCounter;
+			if (spiClkTrigger && moduleOn)
+			begin
+				shiftOut[15:0] <= {shiftOut[0],shiftOut[15:1]}; //7000 for channel 0
+				shiftIn[15:0] <= {shiftIn[14:0],miso};
+			end
+		end
 	end
 	assign dataReady = (spiBitCounter == 4'b1111);	
-	assign CSLow = moduleOn;
+	assign CS = ~moduleOn;
 	assign mosi = shiftOut[0];
 	assign adcReading = shiftIn[10:1];
 		
 endmodule
+
 
 // TODO: Determine which "string" was hit
 
