@@ -19,6 +19,7 @@ public:
   Harp();
   void runHarp();
   void updateWeights();
+  void testScale();
   static const int NOTEFREQ[8]; 
   static const float PWMFREQUENCY = 500000;
   static const int DT = 100;//100us between dac updates for audio
