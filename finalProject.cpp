@@ -1,6 +1,7 @@
 #include "EasyPIO.h"
 #include <stdio.h>
 #include <math.h>
+#include <algorithm>
 #define PI 3.14159265359
 
 #define LOAD_PIN 26
@@ -64,9 +65,11 @@ void Harp::updateWeights(){
 void Harp::runHarp(){}
 
 void Harp::testScale() {
-  _noteWeights = {0,.33,0,0,.33,0,0,.33};
+  float noteset1[] = {0,.33,0,0,.33,0,0,.33};
+  float noteset2[] = {0,0,0,0,0,.5,0,.5};
+  std::copy(noteset1,noteset1+8,_noteWeights);
   playNotes(1000000000,0);
-  _noteWeights = {0,0,0,0,0,.5,0,.5};
+  std::copy(noteset2,noteset2+8,_noteWeights);
   playNotes(1000000000,0);
   // testing.
 }
