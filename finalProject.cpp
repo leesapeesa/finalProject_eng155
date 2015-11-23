@@ -104,24 +104,24 @@ private:
   float _noteWeights[8];
   void writeNoteValue(int time);
   void playNotes(int dur, int startT);
-  void updateWeights();
+  
 public:
   Harp(){for(int i=0; i<8; ++i) _noteWeights[i]=0; };
   void srunHarp();
   static const int NOTEFREQ[8]; 
   static const float PWMFREQUENCY = 500000;
   static const int DT = 100;//100us between dac updates for audio
-
+  void updateWeights();
 };
 
                   // c   d   e   f   g   a   b   c
-Harp::NOTEFREQ[] = {262,294,330,349,392,440,494,523};
+Harp::NOTEFREQ = {262,294,330,349,392,440,494,523};
 // Plays combination of notes according to _noteWeights, takes in
 // time in us since start
 void Harp::writeNoteValue(int t){
   float summedDuty = 0;
   for (int i=0; i<8; ++i){            /// 1mil factor conversion from us->s
-    summedDuty += _noteWeights[i]*cos(2*pi*NOTEFREQ[i]*t/1000000); 
+    summedDuty += _noteWeights[i]*cos(2*PI*NOTEFREQ[i]*t/1000000); 
   }
   setPWM(PWMFREQUENCY,summedDuty);
 }
