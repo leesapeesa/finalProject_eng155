@@ -102,19 +102,20 @@ class Harp
 {
 private:
   float _noteWeights[8];
-  void writeNotes(int time);
+  void writeNoteValue(int time);
   void playNotes(int dur, int startT);
   void updateWeights();
 public:
   Harp(){for(int i=0; i<8; ++i) _noteWeights[i]=0; };
-  void runHarp();
-                               // c   d   e   f   g   a   b   c
-  static const int NOTEFREQ[] = {262,294,330,349,392,440,494,523};
+  void srunHarp();
+  static const int NOTEFREQ[8]; 
   static const float PWMFREQUENCY = 500000;
   static const int DT = 100;//100us between dac updates for audio
 
 };
 
+                  // c   d   e   f   g   a   b   c
+Harp::NOTEFREQ[] = {262,294,330,349,392,440,494,523};
 // Plays combination of notes according to _noteWeights, takes in
 // time in us since start
 void Harp::writeNoteValue(int t){
