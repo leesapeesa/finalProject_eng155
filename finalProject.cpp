@@ -85,6 +85,6 @@ int main() {
   Harp myHarp;
   
   myHarp.testScale();
- 
+  setPwm(5000000.,500.);
   
 }
