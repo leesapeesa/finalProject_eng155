@@ -67,7 +67,7 @@ void Harp::updateWeights(){
 void Harp::runHarp(){}
 
 void Harp::testScale() {
-  float noteset1[] = {.2,0,0,0,0,0,0,0};
+  float noteset1[] = {.4,0,0,0,0,0,0,0};
   std::copy(noteset1,noteset1+8,_noteWeights);
   playNotes(5000000,0);
   for (int i=0; i<7; ++i){
