@@ -44,7 +44,7 @@ void Harp::writeNoteValue(int t){
     summedDuty += _noteWeights[i]*cos(2*PI*NOTEFREQ[i]*t/1000000); 
   }
   setPWM(PWMFREQUENCY,summedDuty);
-  printf("Duty cycle is %f",summedDuty);
+  //printf("Duty cycle is %f",summedDuty);
 }
 
 // Function takes in a duration to play set weights in (us) and a startTime (us)
@@ -66,12 +66,12 @@ void Harp::updateWeights(){
 void Harp::runHarp(){}
 
 void Harp::testScale() {
-  float noteset1[] = {0,.1,0,0,.1,0,0,.1};
+  float noteset1[] = {0,.3,0,0,0,0,0,0};
   float noteset2[] = {0,0,0,0,0,.1,0,.1};
   std::copy(noteset1,noteset1+8,_noteWeights);
   playNotes(5000000,0);
-  std::copy(noteset2,noteset2+8,_noteWeights);
-  playNotes(5000000,0);
+  //std::copy(noteset2,noteset2+8,_noteWeights);
+  //playNotes(5000000,0);
   // testing.
 }
 // STRETCH: Send notes + duration to FPGA
