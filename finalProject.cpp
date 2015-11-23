@@ -51,6 +51,7 @@ void Harp::writeNoteValue(int t){
 void Harp::playNotes(int duration, int startTime){
   for (int nowTime = startTime; nowTime < startTime + duration; nowTime += DT){
     writeNoteValue(nowTime);
+    delayMicros(DT);
   }
 }
 // Function executes SPI transaction with FPGA to update the note weights
