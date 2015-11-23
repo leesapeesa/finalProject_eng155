@@ -86,5 +86,5 @@ int main() {
   
   myHarp.testScale();
   setPWM(5000000.,500.);
-  
+  delayMicros(10000000);
 }
