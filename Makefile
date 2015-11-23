@@ -1,7 +1,7 @@
 # update as necessary.
 # Makefile for the final project.
 
-GCC_FLAGS = -g -lm
+GCC_FLAGS = -g -lm -std=c++11
 C = gcc
 
 TARGETS = finalProject stepperMotor
