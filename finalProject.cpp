@@ -178,7 +178,7 @@ int main() {
   Harp myHarp;
   while(1){
 	myHarp.updateWeights();
-	delayMicros(100);
+	delayMicros(1000000);
   }
   
 }
