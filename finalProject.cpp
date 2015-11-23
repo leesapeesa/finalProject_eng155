@@ -68,6 +68,7 @@ void Harp::testScale() {
   playNotes(1000000000,0);
   _noteWeights[] = {0,0,0,0,0,.5,0,.5};
   playNotes(1000000000,0);
+  // testing.
 }
 // STRETCH: Send notes + duration to FPGA
 // STRETCH: Keep track of length of note.
