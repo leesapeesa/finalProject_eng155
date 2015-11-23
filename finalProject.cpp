@@ -115,7 +115,7 @@ public:
 };
 
                   // c   d   e   f   g   a   b   c
-Harp::NOTEFREQ = {262,294,330,349,392,440,494,523};
+const int Harp::NOTEFREQ[] = {262,294,330,349,392,440,494,523};
 // Plays combination of notes according to _noteWeights, takes in
 // time in us since start
 void Harp::writeNoteValue(int t){
@@ -175,7 +175,7 @@ int main() {
   pinMode(SOUND_PIN, OUTPUT);
   pinMode(EXIT_PIN, INPUT);
   //testScale(); 
-  Harp myHarp();
+  Harp myHarp;
   while(1){
 	myHarp.updateWeights();
 	delayMicros(100);
