@@ -67,12 +67,15 @@ void Harp::updateWeights(){
 void Harp::runHarp(){}
 
 void Harp::testScale() {
-  float noteset1[] = {0,.3,0,0,0,0,0,0};
-  float noteset2[] = {0,0,0,0,0,.1,0,.1};
+  float noteset1[] = {.5,0,0,0,0,0,0,0};
   std::copy(noteset1,noteset1+8,_noteWeights);
   playNotes(5000000,0);
-  std::copy(noteset2,noteset2+8,_noteWeights);
-  playNotes(5000000,0);
+  for (int i=0; i<7; ++i){
+    std::swap(_noteWeights[i],_noteWeights[i+1]);
+    playNotes(5000000,0);
+  }
+  
+  
   // testing.
 }
 // STRETCH: Send notes + duration to FPGA
