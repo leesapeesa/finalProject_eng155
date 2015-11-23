@@ -39,7 +39,7 @@ Harp::Harp(){
 // Plays combination of notes according to _noteWeights, takes in
 // time in us since start
 void Harp::writeNoteValue(int t){
-  float summedDuty = 0;
+  float summedDuty = 0.5;
   for (int i=0; i<8; ++i){            /// 1mil factor conversion from us->s
     summedDuty += _noteWeights[i]*cos(2*PI*NOTEFREQ[i]*t/1000000); 
   }
@@ -66,8 +66,8 @@ void Harp::updateWeights(){
 void Harp::runHarp(){}
 
 void Harp::testScale() {
-  float noteset1[] = {0,.33,0,0,.33,0,0,.33};
-  float noteset2[] = {0,0,0,0,0,.5,0,.5};
+  float noteset1[] = {0,.1,0,0,.1,0,0,.1};
+  float noteset2[] = {0,0,0,0,0,.1,0,.1};
   std::copy(noteset1,noteset1+8,_noteWeights);
   playNotes(5000000,0);
   std::copy(noteset2,noteset2+8,_noteWeights);
