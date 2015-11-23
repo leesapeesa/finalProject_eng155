@@ -71,8 +71,8 @@ void Harp::testScale() {
   float noteset2[] = {0,0,0,0,0,.1,0,.1};
   std::copy(noteset1,noteset1+8,_noteWeights);
   playNotes(5000000,0);
-  //std::copy(noteset2,noteset2+8,_noteWeights);
-  //playNotes(5000000,0);
+  std::copy(noteset2,noteset2+8,_noteWeights);
+  playNotes(5000000,0);
   // testing.
 }
 // STRETCH: Send notes + duration to FPGA
