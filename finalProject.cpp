@@ -121,7 +121,7 @@ const int Harp::NOTEFREQ[] = {262,294,330,349,392,440,494,523};
 void Harp::writeNoteValue(int t){
   float summedDuty = 0;
   for (int i=0; i<8; ++i){            /// 1mil factor conversion from us->s
-    summedDuty += _noteWeights[i]*cos(2*PI*NOTEFREQ[i]*t/1000000); 
+    summedDuty += _noteWeights[i]*std::cos(2*PI*NOTEFREQ[i]*t/1000000); 
   }
   setPWM(PWMFREQUENCY,summedDuty);
 }
