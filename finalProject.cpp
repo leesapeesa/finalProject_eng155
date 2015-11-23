@@ -29,7 +29,7 @@ public:
 
                   // c   d   e   f   g   a   b   c
 const int Harp::NOTEFREQ[] = {262,294,330,349,392,440,494,523};
-const float Harp::PWMFREQUENCY = 500000;
+const float Harp::PWMFREQUENCY = 50000;
 Harp::Harp(){
 	for(int i=0; i<8; ++i) _noteWeights[i] = 0; 
 	//pinMode(SOUND_PIN, OUTPUT);
@@ -85,6 +85,6 @@ int main() {
   Harp myHarp;
   
   myHarp.testScale();
-  setPWM(500,.5);
-  delayMicros(10000000);
+  //setPWM(500,.5);
+  //delayMicros(10000000);
 }
