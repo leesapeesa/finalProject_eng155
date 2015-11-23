@@ -50,8 +50,8 @@ void Harp::writeNoteValue(int t){
 // Function takes in a duration to play set weights in (us) and a startTime (us)
 void Harp::playNotes(int duration, int startTime){
   for (int nowTime = startTime; nowTime < startTime + duration; nowTime += DT){
-    writeNoteValue(nowTime);
     delayMicros(DT);
+    writeNoteValue(nowTime);
   }
 }
 // Function executes SPI transaction with FPGA to update the note weights
@@ -67,7 +67,7 @@ void Harp::updateWeights(){
 void Harp::runHarp(){}
 
 void Harp::testScale() {
-  float noteset1[] = {.5,0,0,0,0,0,0,0};
+  float noteset1[] = {.2,0,0,0,0,0,0,0};
   std::copy(noteset1,noteset1+8,_noteWeights);
   playNotes(5000000,0);
   for (int i=0; i<7; ++i){
