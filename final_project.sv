@@ -8,11 +8,20 @@ module final_project(input logic clk, reset, sclk, sdi,
 		logic [2:0] currentNote;
 		logic [7:0] [7:0] strings;
 		logic [7:0] [7:0] fakeStrings;
+		always_ff @(posedge clk) begin if(reset) begin
+			for (int i=0; i<8; i++) begin
+				fakeStrings[i] <= i;
+			end
+			end
+		end
 		logic dataReady, trigger;
-		spi_raspi_slave2 srs(reset, sclk, sdi, sdo, strings, action);
+		//scaledClk skk(clk,trigger);
+		spi_raspi_slave2 srs(reset, sclk, sdi, sdo, fakeStrings, action);
 		oscillateMirror om(clk, reset, stepperWires, currentNote, trigger, laserControl);
 		updateStrings un(clk, reset, adcMiso, adcMosi, CS, spiClk, trigger, currentNote, strings);
 endmodule
+
+
 
 // SPI interface for our final project.
 // After reset has been hit at some point, when master drives sck,
@@ -74,6 +83,9 @@ module oscillateMirror(input logic clk, reset,
 		// Every four step counts, we want to turn on the laser.
 		// essentially checking for mod 4.     
 		if (stepCount[1:0] == 0) begin
+			//laserControl <= (counter > 2 && counter < 1000);
+			// ADC can't be help for too long.
+			//ADCload <= (counter > 2 && counter < 1000);
 			notes <= forward ? notes + 1'b1 : notes - 1'b1;
 		end
 		counter <= counter + 1'b1;
@@ -104,6 +116,10 @@ module updateStrings(input logic clk, reset, miso,
 		if (dataReady&~trigger) strings[holdStringToCheck] <= adcReading[9:2]; 
 	end
 endmodule
+
+// TODO: Implement SPI between PI and FPGA
+
+// TODO: Implement SPI between ADC and FPGA
 
 // Module implements a synchronous trigger that is high once per 315kHz cycle
 module spiPulseGen(input clk,
@@ -169,3 +185,10 @@ module ADCreader(input logic clk, reset, start,
 	assign adcReading = shiftIn[10:1];
 		
 endmodule
+
+
+// TODO: Determine which "string" was hit
+
+// STRETCH: Receive note and duration played
+// STRETCH: Switch between play mode vs playback mode
+// STRETCH: Play only note received
