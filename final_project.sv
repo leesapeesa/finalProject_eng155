@@ -8,16 +8,16 @@ module final_project(input logic clk, reset, sclk, sdi, load,
 		logic [2:0] currentNote;
 		logic [7:0] [7:0] strings;
 		logic [7:0] [7:0] fakeStrings;
-		always_ff @(posedge clk) begin
+		/* always_ff @(posedge clk) begin
 		if(reset) begin
 			for (int i=0; i<8; i++) begin
 				fakeStrings[i] <= i;
 			end
 			end
-		end
+		end */
 		logic dataReady, trigger;
 		//scaledClk skk(clk,trigger);
-		spi_raspi_slave2 srs(load, sclk, sdi, sdo, fakeStrings, action);
+		spi_raspi_slave2 srs(load, sclk, sdi, sdo, strings, action);
 		oscillateMirror om(clk, reset, stepperWires, currentNote, trigger, laserControl);
 		updateStrings un(clk, reset, adcMiso, adcMosi, CS, spiClk, trigger, currentNote, strings);
 endmodule
