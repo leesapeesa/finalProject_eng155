@@ -1,4 +1,4 @@
-module final_project(input logic clk, reset, sclk, sdi,
+module final_project(input logic clk, reset, sclk, sdi, load,
 							output logic sdo,
 							input logic adcMiso, 
 							output logic adcMosi, CS, spiClk,
@@ -16,7 +16,7 @@ module final_project(input logic clk, reset, sclk, sdi,
 		end
 		logic dataReady, trigger;
 		//scaledClk skk(clk,trigger);
-		spi_raspi_slave2 srs(reset, sclk, sdi, sdo, fakeStrings, action);
+		spi_raspi_slave2 srs(load, sclk, sdi, sdo, fakeStrings, action);
 		oscillateMirror om(clk, reset, stepperWires, currentNote, trigger, laserControl);
 		updateStrings un(clk, reset, adcMiso, adcMosi, CS, spiClk, trigger, currentNote, strings);
 endmodule
@@ -28,15 +28,15 @@ endmodule
 // adc readings for each string are shifted out one by one in order,
 // starting with string 0 bit 7 and ending with string 7 bit 0
 // The last 8 bits of any communication are held in action
-module spi_raspi_slave2(input logic reset, sck,
+module spi_raspi_slave2(input logic load, sck,
 			  input logic sdi,
 			  output logic sdo, // note to send back
 			  input logic [7:0] [7:0] strings, // calculated by other modules
 			  output logic [7:0] action); // action for the FPGA to do (last 8 bits sent)
 		logic [2:0] stringState;
 		logic [2:0] whichBit;
-		always_ff @(posedge sck, posedge reset) begin
-			if (reset) begin
+		always_ff @(posedge sck) begin
+			if (!load) begin
 				{stringState,whichBit} <= 6'b0;
 				action <= 1'b0;
 			end
