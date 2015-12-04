@@ -47,11 +47,7 @@ module spi_raspi_slave2(input logic load, sck,
 			end
 		end  // We want MSB first, not LSB so we start at bit 7
 		
-		always_ff @(negedge sck) begin
-			wasdone = load;
-			sodelayed = strings[stringState][7 - whichBit];
-		end
-		assign sdo = (load & !wasdone) ? strings[7][7] : sodelayed; 
+		assign sdo = strings[stringState][7-whichBit]
 endmodule
 
 // Moves one step at 152 hz when counter size is 18.
