@@ -8,7 +8,8 @@ module final_project(input logic clk, reset, sclk, sdi, load,
 		logic [2:0] currentNote;
 		logic [7:0] [7:0] strings;
 		logic [7:0] [7:0] fakeStrings;
-		always_ff @(posedge clk) begin if(reset) begin
+		always_ff @(posedge clk) begin
+		if(reset) begin
 			for (int i=0; i<8; i++) begin
 				fakeStrings[i] <= i;
 			end
@@ -45,7 +46,11 @@ module spi_raspi_slave2(input logic load, sck,
 				action <= {action[6:0], sdi};
 			end
 		end  // We want MSB first, not LSB so we start at bit 7
-		assign sdo = strings[stringState][7-whichBit]; 
+		
+		// we want to shift out sdo on the negative edge of the clk.
+		always_ff @(negedge sck)
+			sdo = strings[stringState][7-whichBit];
+		//assign sdo = strings[stringState][7-whichBit]; 
 endmodule
 
 // Moves one step at 152 hz when counter size is 18.
