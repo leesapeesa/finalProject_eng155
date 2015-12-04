@@ -47,10 +47,11 @@ module spi_raspi_slave2(input logic load, sck,
 			end
 		end  // We want MSB first, not LSB so we start at bit 7
 		
-		// we want to shift out sdo on the negative edge of the clk.
-		always_ff @(negedge sck)
-			sdo = strings[stringState][7-whichBit];
-		//assign sdo = strings[stringState][7-whichBit]; 
+		always_ff @(negedge sck) begin
+			wasdone = load;
+			sodelayed = strings[stringState][7 - whichBit];
+		end
+		assign sdo = (load & !wasdone) ? strings[7][7] : sodelayed; 
 endmodule
 
 // Moves one step at 152 hz when counter size is 18.
