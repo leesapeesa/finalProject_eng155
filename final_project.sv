@@ -1,23 +1,23 @@
-module final_project(input logic clk, reset, sclk, sdi, load,
+module final_project(input logic clk, reset, sclk, load,
 							output logic sdo,
 							input logic adcMiso, 
 							output logic adcMosi, CS, spiClk,
                     output logic [3:0] stepperWires,
 						  output logic laserControl);
-		logic [7:0] action;
 		logic [2:0] currentNote;
 		logic [7:0] [7:0] strings;
 		logic [7:0] [7:0] fakeStrings;
-		/* always_ff @(posedge clk) begin
+		/*always_ff @(posedge clk) begin
 		if(reset) begin
 			for (int i=0; i<8; i++) begin
 				fakeStrings[i] <= i;
 			end
 			end
-		end */
-		logic dataReady, trigger;
+		end
+		*/
+		logic trigger;
 		//scaledClk skk(clk,trigger);
-		spi_raspi_slave2 srs(load, sclk, sdi, sdo, strings, action);
+		spi_raspi_slave2 srs(load, sclk, sdo, strings);
 		oscillateMirror om(clk, reset, stepperWires, currentNote, trigger, laserControl);
 		updateStrings un(clk, reset, adcMiso, adcMosi, CS, spiClk, trigger, currentNote, strings);
 endmodule
@@ -30,24 +30,28 @@ endmodule
 // starting with string 0 bit 7 and ending with string 7 bit 0
 // The last 8 bits of any communication are held in action
 module spi_raspi_slave2(input logic load, sck,
-			  input logic sdi,
+			  //input logic sdi,
 			  output logic sdo, // note to send back
-			  input logic [7:0] [7:0] strings, // calculated by other modules
-			  output logic [7:0] action); // action for the FPGA to do (last 8 bits sent)
+			  input logic [7:0] [7:0] strings); // calculated by other modules
+			  //output logic [7:0] action); // action for the FPGA to do (last 8 bits sent)
 		logic [2:0] stringState;
 		logic [2:0] whichBit;
+		logic wasdone, sdodelayed;
 		always_ff @(posedge sck) begin
 			if (!load) begin
 				{stringState,whichBit} <= 6'b0;
-				action <= 1'b0;
+				//action <= 1'b0;
 			end
 			else begin 
 				{stringState,whichBit} <= {stringState,whichBit} + 1'b1;
-				action <= {action[6:0], sdi};
+				//action <= {action[6:0], sdi};
 			end
 		end  // We want MSB first, not LSB so we start at bit 7
-		
-		assign sdo = strings[stringState][7-whichBit]
+		always_ff @(negedge sck) begin
+			wasdone = load;
+			sdodelayed = strings[7 - stringState][7 - whichBit];
+		end
+		assign sdo = (load & !wasdone) ? strings[7][7] : sdodelayed; 
 endmodule
 
 // Moves one step at 152 hz when counter size is 18.
@@ -113,7 +117,7 @@ module updateStrings(input logic clk, reset, miso,
 	logic [2:0] holdStringToCheck;
 	
 	always_ff @(posedge clk) begin
-		holdStringToCheck <= trigger? stringToCheck:holdStringToCheck;
+		if (trigger) holdStringToCheck <= stringToCheck;
 		// Gets the most significant 8 bits
 		if (dataReady&~trigger) strings[holdStringToCheck] <= adcReading[9:2]; 
 	end
