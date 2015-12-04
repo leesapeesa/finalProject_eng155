@@ -32,8 +32,8 @@ const int Harp::NOTEFREQ[] = {262,294,330,349,392,440,494,523};
 const float Harp::PWMFREQUENCY = 50000;
 Harp::Harp(){
 	for(int i=0; i<8; ++i) _noteWeights[i] = 0; 
-	//pinMode(SOUND_PIN, OUTPUT);
 	pinMode(EXIT_PIN, INPUT);
+  pinMode(LOAD_PIN, OUTPUT);
 }
 
 // Plays combination of notes according to _noteWeights, takes in
@@ -58,11 +58,15 @@ void Harp::playNotes(int duration, int startTime){
 // Should also normalize
 void Harp::updateWeights(){
   char sendAction = 0x01; // doesn't really matter yet what we send.
-  for (int i=0; i<8; ++i){
+  digitalWrite(LOAD_PIN, 1);
+  for (int i = 0; i < 8; ++i) {
     _noteWeights[i] = spiSendReceive(sendAction);
-    // then normalize
   }
+  digitalWrite(LOAD_PIN, 0);
+  delayMicros(1000); // just for debugging
+  // Then normalize.
 }
+
 // Function for continous operation of the harp playing music. Add exit condition.
 void Harp::runHarp(){
   while (true) {
