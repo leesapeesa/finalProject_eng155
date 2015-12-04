@@ -12,7 +12,7 @@
 class Harp
 {
 private:
-  float _noteWeights[8];
+  char _noteWeights[8];
   void writeNoteValue(int time);
   void playNotes(int dur, int startT);
   
@@ -73,7 +73,7 @@ void Harp::runHarp(){
     updateWeights();
     printf("The weights of each string are: ");
     for (int i = 0; i < 8; ++i) {
-       printf("%f ", _noteWeights[i]);
+       printf("%x ", _noteWeights[i]);
     }
     printf("\n");
   }
