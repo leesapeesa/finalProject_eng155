@@ -44,7 +44,7 @@ void Harp::writeNoteValue(int t){
     summedDuty += _noteWeights[i]*cos(2*PI*NOTEFREQ[i]*t/1000000); 
   }
   setPWM(PWMFREQUENCY,summedDuty);
-  //printf("Duty cycle is %f",summedDuty);
+ // printf("Duty cycle is %f",summedDuty);
 }
 
 // Function takes in a duration to play set weights in (us) and a startTime (us)
@@ -59,12 +59,21 @@ void Harp::playNotes(int duration, int startTime){
 void Harp::updateWeights(){
   char sendAction = 0x01; // doesn't really matter yet what we send.
   for (int i=0; i<8; ++i){
-    _noteWeights[i] = float(spiSendReceive(sendAction))/128.;
+    _noteWeights[i] = spiSendReceive(sendAction);
     // then normalize
   }
 }
 // Function for continous operation of the harp playing music. Add exit condition.
-void Harp::runHarp(){}
+void Harp::runHarp(){
+  while (true) {
+    updateWeights();
+    printf("The weights of each string are: ");
+    for (int i = 0; i < 8; ++i) {
+       printf("%f ", _noteWeights[i]);
+    }
+    printf("\n");
+  }
+}
 
 void Harp::testScale() {
   float noteset1[] = {.4,0,0,0,0,0,0,0};
@@ -87,7 +96,8 @@ int main() {
   spiInit(244000, 0);
   Harp myHarp;
   
-  myHarp.testScale();
+  myHarp.runHarp();
+ // myHarp.testScale();
   //setPWM(500,.5);
   //delayMicros(10000000);
 }
