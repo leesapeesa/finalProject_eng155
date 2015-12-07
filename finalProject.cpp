@@ -9,16 +9,16 @@
 
 #define LOAD_PIN 26
 #define SOUND_PIN 18
-#define EXIT_PIN 24
-#define PLAY_PIN 25
-#define RECORD_PIN 27
+#define EXIT_PIN 6
+#define PLAY_PIN 24
+#define RECORD_PIN 25
+#define PLAY_LED 4
 
 class Harp
 {
 private:
-  //std::array<std::array<float, 8>, 12> _allNoteWeights; // for averaging
+  std::array<std::array<float, 8>, 4> _allNoteWeights; // for averaging
   std::array<float, 8> _noteWeights;
-  //float _noteWeights[8];
   std::vector<std::array<float, 8>> _recordedSong;
   unsigned int _ringBufferIndex;
   void writeNoteValue(unsigned int time);
@@ -37,16 +37,17 @@ public:
 };
 
                             // c   d   e   f   g   a   b   c
-const int Harp::NOTEFREQ[] = {120, 200, 280, 380, 480, 580, 680, 880}; // {262,294,330,349,392,440,494,523};
+const int Harp::NOTEFREQ[] = {200, 300, 350, 450, 550, 650, 700, 800}; // {262,294,330,349,392,440,494,523};
 const float Harp::PWMFREQUENCY = 50000;
 
 Harp::Harp(){//:_ringBufferIndex(0){
   for(int i=0; i<8; ++i) _noteWeights[i] = 0;
-  // std::fill(_allNoteWeights.begin(), _allNoteWeights.end(), _noteWeights); 
+  std::fill(_allNoteWeights.begin(), _allNoteWeights.end(), _noteWeights); 
 	pinMode(EXIT_PIN, INPUT);
   pinMode(LOAD_PIN, OUTPUT);
   pinMode(RECORD_PIN, INPUT);
   pinMode(PLAY_PIN, INPUT);
+  pinMode(PLAY_LED, OUTPUT);
 }
 
 // Plays combination of notes according to _noteWeights, takes in
@@ -74,8 +75,8 @@ void Harp::updateWeights(){
   //_noteWeights[7] = spiSendReceive(sendAction);
   //delayMicros(100);
   char notes[8];
+  std::array<float, 8> tempNotes;
   digitalWrite(LOAD_PIN, 1);
-  notes[7] = spiSendReceive(sendAction);
   notes[0] = spiSendReceive(sendAction);
   notes[1] = spiSendReceive(sendAction);
   notes[2] = spiSendReceive(sendAction);
@@ -83,75 +84,79 @@ void Harp::updateWeights(){
   notes[4] = spiSendReceive(sendAction);
   notes[5] = spiSendReceive(sendAction);
   notes[6] = spiSendReceive(sendAction);
+  notes[7] = spiSendReceive(sendAction);
   digitalWrite(LOAD_PIN, 0);
 
+ //printf("The notes are ");
+  float sum = 0;
   for (int i = 0; i < 8; ++i) {
-    _noteWeights[i] = notes[i] & 127;
-   // if (i != 7) _noteWeights[i] = 0;
-  } //delayMicros(10000); // just for debugging
+    tempNotes[i] = notes[i] < 120 ? 0 : notes[i];
+    sum += tempNotes[i];
+  }
   // Then normalize.
   
-  float sum = 0;
-  for (int i = 0; i < 8; ++i) sum +=_noteWeights[i];
   for (int i = 0; i < 8; ++i) {
-   if (_noteWeights[i] < 100) _noteWeights[i] == 0;
-     _noteWeights[i] = sum == 0 ? 0: _noteWeights[i] / ( 2 * sum);
+    tempNotes[i] = sum == 0 ? 0: tempNotes[i] / ( 2 * sum);
+    //printf("%f ", tempNotes[i]);
  }
-//  _allNoteWeights[_ringBufferIndex % _allNoteWeights.size()] = _noteWeights;
+  //printf("\n");
+ _allNoteWeights[_ringBufferIndex % _allNoteWeights.size()] = tempNotes;
 
 }
 
 void Harp::playbackSong() {
   int timePassed = 0;
+  digitalWrite(PLAY_LED, 1);
   for (int i = 0; i < _recordedSong.size(); ++i) {
     printf("playing Song %d\n", i);
-    delayMicros(DT); 
     _noteWeights = _recordedSong[i];
     writeNoteValue(timePassed);
-    timePassed +=  DT;
+    delayMicros(DT * 3); 
+    timePassed +=  DT * 3;
   }
+  digitalWrite(PLAY_LED, 0);
 }
 
 // Function for continous operation of the harp playing music. Add exit condition.
 void Harp::runHarp(){
   unsigned long timePassed = 0;
   unsigned long counter = 0;
+  std::vector<std::array<float, 8>> currentlyRecording;
+  bool justTurnedOffRecording = false;
   while (true) {
-
     bool isRecording = digitalRead(RECORD_PIN);
     if (digitalRead(PLAY_PIN) && !isRecording) {
        playbackSong();
     }
-    if (!isRecording) {
-      //_recordedSong.clear();   
+    if (!isRecording && justTurnedOffRecording) {
+      _recordedSong = currentlyRecording;
+      currentlyRecording.clear();
+      justTurnedOffRecording = false;
     }
+
     _ringBufferIndex++;
-   
     updateWeights();
-    /*
+    
     for (int i = 0; i < 8; ++i){
       float sum = 0;
       for (int j = 0; j < _allNoteWeights.size(); ++j) {
         sum += _allNoteWeights[j][i];
       }
       sum /= _allNoteWeights.size();
-    //  _noteWeights[i] = (sum < 0.10) ? 0 : sum;
+      _noteWeights[i] =  sum;
     }
-    */
-    //printf("The weights of each string are: ");
-    //for (int i = 0; i < 8; ++i) {
-    //   printf("%f ", _noteWeights[i]);
-    //}
-    //printf("\n");
-    
+   /* 
+    printf("The weights of each string are: ");
+    for (int i = 0; i < 8; ++i) {
+       printf("%f ", _noteWeights[i]);
+    }
+    printf("\n");
+   */
     if (isRecording) {
-   //   if (counter == 20) {
-        _recordedSong.push_back(_noteWeights);
-        printf("isRecording\n");
-        counter = 0;
-   //   }
-      //printf("_recordedSong size %d \n", _recordedSong.size());
-      ++counter;
+      if (!_recordedSong.empty()) _recordedSong.clear();
+      currentlyRecording.push_back(_noteWeights);
+     // printf("isRecording\n");
+      justTurnedOffRecording = true;
     }
     delayMicros(DT);
     timePassed += DT;
@@ -183,10 +188,9 @@ int main() {
   pioInit();
   pwmInit();
   spiInit(244000, 0);
-
   Harp myHarp; 
   myHarp.runHarp();
- //myHarp.testScale();
+  //myHarp.testScale();
   //setPWM(500,.5);
   //delayMicros(10000000);
 }
