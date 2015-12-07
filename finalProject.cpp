@@ -19,7 +19,7 @@ private:
   //std::array<std::array<float, 8>, 12> _allNoteWeights; // for averaging
   //std::array<float, 8> _noteWeights;
   float _noteWeights[8];
-  std::vector<std::array<float, 8>> _recordedSong;
+  // std::vector<std::array<float, 8>> _recordedSong;
   unsigned int _ringBufferIndex;
   void writeNoteValue(unsigned int time);
   void playNotes(int dur, int startT);
@@ -73,29 +73,32 @@ void Harp::updateWeights(){
   char sendAction = 0x01; // doesn't really matter yet what we send.
   //_noteWeights[7] = spiSendReceive(sendAction);
   //delayMicros(100);
+  char notes[8];
   digitalWrite(LOAD_PIN, 1);
-  _noteWeights[7] = spiSendReceive(sendAction);
-  _noteWeights[0] = spiSendReceive(sendAction);
-  _noteWeights[1] = spiSendReceive(sendAction);
-  _noteWeights[2] = spiSendReceive(sendAction);
-  _noteWeights[3] = spiSendReceive(sendAction);
-  _noteWeights[4] = spiSendReceive(sendAction);
-  _noteWeights[5] = spiSendReceive(sendAction);
-  _noteWeights[6] = spiSendReceive(sendAction);
+  notes[7] = spiSendReceive(sendAction);
+  notes[0] = spiSendReceive(sendAction);
+  notes[1] = spiSendReceive(sendAction);
+  notes[2] = spiSendReceive(sendAction);
+  notes[3] = spiSendReceive(sendAction);
+  notes[4] = spiSendReceive(sendAction);
+  notes[5] = spiSendReceive(sendAction);
+  notes[6] = spiSendReceive(sendAction);
   digitalWrite(LOAD_PIN, 0);
 
-  //delayMicros(10000); // just for debugging
-  // Then normalize.
-  /*
-  float sum = 0;
-  for (int i = 0; i < 8; ++i) sum += std::min(_noteWeights[i], 127.0f);
   for (int i = 0; i < 8; ++i) {
-    _noteWeights[i] = std::min(_noteWeights[i], 127.0f);
+    _noteWeights[i] = float( notes[i] % 127);
+   // if (i != 7) _noteWeights[i] = 0;
+  } //delayMicros(10000); // just for debugging
+  // Then normalize.
+  
+  float sum = 0;
+  for (int i = 0; i < 8; ++i) sum +=_noteWeights[i];
+  for (int i = 0; i < 8; ++i) {
    //if (_noteWeights[i] < 100) _noteWeights[i] == 0;
-   _noteWeights[i] = sum == 0 ? 0: _noteWeights[i] / sum;
+   _noteWeights[i] = sum == 0 ? 0: _noteWeights[i] / ( 2 * sum);
   }
-  _allNoteWeights[_ringBufferIndex % _allNoteWeights.size()] = _noteWeights;
-*/
+//  _allNoteWeights[_ringBufferIndex % _allNoteWeights.size()] = _noteWeights;
+
 }
 /*
 void Harp::playbackSong() {
