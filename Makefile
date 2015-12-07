@@ -2,7 +2,7 @@
 # Makefile for the final project.
 
 GCC_FLAGS = -g -lm -std=c++11
-C = gcc
+C = g++
 
 TARGETS = finalProject stepperMotor
 
