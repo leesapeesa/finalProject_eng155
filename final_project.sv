@@ -24,22 +24,16 @@ endmodule
 // starting with string 0 bit 7 and ending with string 7 bit 0
 // The last 8 bits of any communication are held in action
 module spi_raspi_slave2(input logic load, sck,
-			  //input logic sdi,
 			  output logic sdo, // note to send back
 			  input logic [7:0] [7:0] strings); // calculated by other modules
-			  //output logic [7:0] action); // action for the FPGA to do (last 8 bits sent)
 		logic [2:0] stringState;
 		logic [2:0] whichBit;
 		logic wasdone, sdodelayed;
 		always_ff @(posedge sck) begin
-			if (!load) begin
+			if (!load)
 				{stringState,whichBit} <= 6'b0;
-				//action <= 1'b0;
-			end
-			else begin 
+			else
 				{stringState,whichBit} <= {stringState,whichBit} + 1'b1;
-				//action <= {action[6:0], sdi};
-			end
 		end  // We want MSB first, not LSB so we start at bit 7
 		assign sdo = strings[stringState][7-whichBit];
 endmodule
@@ -52,7 +46,7 @@ module oscillateMirror2(input logic clk, reset,
 						  output logic ADCload,
 						  output logic laserControl);
 
-	logic [18:0] counter; //
+	logic [18:0] counter;
 	logic [3:0] turns; // 4 stepper motor
 	logic [2:0] stepCount; // 8 notes
 	logic forward;
@@ -71,7 +65,7 @@ module oscillateMirror2(input logic clk, reset,
 		
 		// Take steps at two different points along the time interval
 		if (moving&&((counter[17:0] == 18'h18000)||(counter[17:0] == 18'h02000))) begin
-		turns <= forward ? {turns[2:0], turns[3]} : {turns[0], turns[3:1]};
+			turns <= forward ? {turns[2:0], turns[3]} : {turns[0], turns[3:1]};
 		end
 		// Once we hit end travel time, switch to hold mode
 		if (moving&&(counter[17:0] == 18'h2F000)) begin
