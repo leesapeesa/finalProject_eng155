@@ -30,6 +30,7 @@ public:
   void updateWeights();
   void testScale();
   void playbackSong();
+  void buttonDebounce();
   static const int NOTEFREQ[8]; 
   static const float PWMFREQUENCY;
   static const int DT = 100; //100us between dac updates for audio
