@@ -21,8 +21,8 @@ private:
   std::array<float, 8> _noteWeights;
   std::vector<std::array<float, 8>> _recordedSong;
   unsigned int _ringBufferIndex;
-  void writeNoteValue(unsigned int time);
-  void playNotes(int dur, int startT);
+  void writeNoteValue(unsigned int time); // Output sample over pwm at given time
+  void playNotes(int dur, int startT); // writeNoteValues according to _noteWeights for duration dur
   
 public:
   Harp();
@@ -30,7 +30,7 @@ public:
   void updateWeights();
   void testScale();
   void playbackSong();
-  void buttonDebounce();
+  void stringDebounce();
   static const int NOTEFREQ[8]; 
   static const float PWMFREQUENCY;
   static const int DT = 100; //100us between dac updates for audio
@@ -39,7 +39,7 @@ public:
 
                                                                           // c   d   e   f   g   a   b   c
 const int Harp::NOTEFREQ[] = {200, 300, 350, 450, 550, 650, 700, 800}; // {262,294,330,349,392,440,494,523};
-const float Harp::PWMFREQUENCY = 50000;
+const float Harp::PWMFREQUENCY = 50000; // Fast enough that we don't need to worry about it
 
 Harp::Harp():_ringBufferIndex(0) {
   for (int i = 0; i < 8; ++i) _noteWeights[i] = 0;
@@ -59,7 +59,7 @@ void Harp::writeNoteValue (unsigned int t){
   for (int i = 0; i < 8; ++i){            /// 1mil factor conversion from us->s
     summedDuty += _noteWeights[i] * cos(angleMultiplier * NOTEFREQ[i]); 
   }
-  setPWM(PWMFREQUENCY,summedDuty);
+  setPWM(PWMFREQUENCY,summedDuty); // PWM pin 18 controls audio jack
  // printf("Duty cycle is %f",summedDuty);
 }
 
@@ -121,7 +121,7 @@ void Harp::playbackSong() {
   digitalWrite(PLAY_LED, 0);
 }
 
-void Harp::buttonDebounce() {
+void Harp::stringDebounce() {
   // Button debounce.
   for (int i = 0; i < 8; ++i){
     float sum = 0;
@@ -144,7 +144,7 @@ void Harp::runHarp(){
   bool justTurnedOffRecording = false;
   while (true) {
     updateWeights();
-    buttonDebounce();
+    stringDebounce();
     
     bool isRecording = digitalRead(RECORD_PIN);
     
