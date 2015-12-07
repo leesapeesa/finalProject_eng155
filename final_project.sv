@@ -1,3 +1,6 @@
+// Lisa Yin and Marc Finzi
+// E155 Microprocessors Final Project, 12/7/15
+
 // Main FPGA module for laser harp
 module final_project(input logic clk, reset, sclk, load,
 							output logic sdo,
@@ -10,25 +13,23 @@ module final_project(input logic clk, reset, sclk, load,
 		logic [7:0] [7:0] strings;
 		logic trigger;
 
-		spi_raspi_slave2 srs(load, sclk, sdo, strings);
-		oscillateMirror2 om(clk, reset, stepperWires, currentNote, trigger, laserControl);
-		updateStrings un(clk, reset, adcMiso, adcMosi, CS, spiClk, trigger, currentNote, strings);
-		assign leds[3:0] = {currentNote,trigger};
+		spi_raspi_slave2 srs(load, sclk, sdo, strings); // SPI->PI connection
+		oscillateMirror2 om(clk, reset, stepperWires, currentNote, trigger, laserControl); // Controls Motor, Laser
+		updateStrings un(clk, reset, adcMiso, adcMosi, CS, spiClk, trigger, currentNote, strings); // Fills out strings
+		assign leds[3:0] = {currentNote,trigger}; // Debug Leds for adc trigger timing
 endmodule
 
 
 
-// SPI interface for our final project.
-// After reset has been hit at some point, when master drives sck,
+// SPI interface to send out data to PI
+// When master drives sck and load is asserted,
 // adc readings for each string are shifted out one by one in order,
 // starting with string 0 bit 7 and ending with string 7 bit 0
-// The last 8 bits of any communication are held in action
 module spi_raspi_slave2(input logic load, sck,
 			  output logic sdo, // note to send back
 			  input logic [7:0] [7:0] strings); // calculated by other modules
 		logic [2:0] stringState;
 		logic [2:0] whichBit;
-		logic wasdone, sdodelayed;
 		always_ff @(posedge sck) begin
 			if (!load)
 				{stringState,whichBit} <= 6'b0;
@@ -81,7 +82,7 @@ module oscillateMirror2(input logic clk, reset,
 			moving <= 1'b1;
 			nextCounter = 0; // Blocking
 		end
-		counter <= nextCounter; // Take either counter+1 or 0, depending
+		counter <= nextCounter; // Take either counter+1 or 0, depending on above conditions
 	end
 	
 	assign stepperWires = turns; // Output to H-Bridge
@@ -100,7 +101,7 @@ module updateStrings(input logic clk, reset, miso,
 							output logic [7:0] [7:0] strings);
 	logic [18:0] counter; // care must be taken with interactions with oscillateMirror.
 	logic [9:0] adcReading;
-	logic dataReady; // Flag from adc signalling Data in adcReading is good
+	logic dataReady; // Flag from adc signalling that data in adcReading is good
 	ADCreader ar(clk,reset,trigger,miso,mosi,CS,spiClk,adcReading,dataReady);
 	logic [2:0] holdStringToCheck;
 	
@@ -112,7 +113,7 @@ module updateStrings(input logic clk, reset, miso,
 endmodule
 
 
-// Module implements a synchronous trigger that is high once per 315kHz cycle
+// Module implements a synchronous pulse that is high once per 315kHz cycle
 // Also contains the spiClk used to communicate with the ADC
 module spiPulseGen(input clk,
 						output spiTrigger, spiClk);
