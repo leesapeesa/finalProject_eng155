@@ -155,29 +155,26 @@ module ADCreader(input logic clk, reset, start,
 	// The module be turned on when start is asserted, and off when data is ready
 	always_ff @(posedge clk) 
 	begin
-		if (reset) 
-		begin 
+		if (reset) begin 
 			spiBitCounter <= 4'b1111;
 			moduleOn <= 1'b0;
 			shiftOut <= 16'hFF;
 		end
-		else
-		begin
+		else begin
 			if(start) moduleOn<=1'b1;
 			else moduleOn <= (dataReady&spiClkGen? 1'b0:moduleOn);
 			spiBitCounter <= (spiClkTrigger && moduleOn)?(spiBitCounter+1'b1):spiBitCounter;
-			if (spiClkTrigger && moduleOn)
-			begin
+			// While the module is on, and we hit the trigger, shift out the trigger
+			if (spiClkTrigger && moduleOn) begin
 				shiftOut[15:0] <= {shiftOut[0],shiftOut[15:1]};
 				shiftIn[15:0] <= {shiftIn[14:0],miso};
 			end
 		end
 	end
-	assign dataReady = (spiBitCounter == 4'b1111);	
+	assign dataReady = (spiBitCounter == 4'b1111);	// Endstate
 	assign CS = ~moduleOn;
-	assign mosi = 1'b1;
+	assign mosi = 1'b1; // We don't need to switch channels anyway
 	assign adcReading = shiftIn[10:1];
-		
 endmodule
 
 
