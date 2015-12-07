@@ -43,7 +43,6 @@ const float Harp::PWMFREQUENCY = 50000; // Fast enough that we don't need to wor
 Harp::Harp():_ringBufferIndex(0) {
   for (int i = 0; i < 8; ++i) _noteWeights[i] = 0;
   std::fill(_allNoteWeights.begin(), _allNoteWeights.end(), _noteWeights); 
-  pinMode(EXIT_PIN, INPUT);
   pinMode(LOAD_PIN, OUTPUT);
   pinMode(RECORD_PIN, INPUT);
   pinMode(PLAY_PIN, INPUT);
