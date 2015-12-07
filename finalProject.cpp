@@ -145,13 +145,13 @@ void Harp::runHarp(){
       sum /= _allNoteWeights.size();
       _noteWeights[i] = sum;
     }
-    
+   /* 
     printf("The weights of each string are: ");
     for (int i = 0; i < 8; ++i) {
        printf("%f ", _noteWeights[i]);
     }
     printf("\n");
-   
+   */
     if (isRecording) {
       if (!_recordedSong.empty()) _recordedSong.clear();
       currentlyRecording.push_back(_noteWeights);
