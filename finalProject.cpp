@@ -9,17 +9,17 @@
 
 #define LOAD_PIN 26
 #define SOUND_PIN 18
-#define EXIT_PIN 25
-#define PLAY_PIN 24
+#define EXIT_PIN 24
+#define PLAY_PIN 25
 #define RECORD_PIN 27
 
 class Harp
 {
 private:
   //std::array<std::array<float, 8>, 12> _allNoteWeights; // for averaging
-  //std::array<float, 8> _noteWeights;
-  float _noteWeights[8];
-  // std::vector<std::array<float, 8>> _recordedSong;
+  std::array<float, 8> _noteWeights;
+  //float _noteWeights[8];
+  std::vector<std::array<float, 8>> _recordedSong;
   unsigned int _ringBufferIndex;
   void writeNoteValue(unsigned int time);
   void playNotes(int dur, int startT);
@@ -29,7 +29,7 @@ public:
   void runHarp();
   void updateWeights();
   void testScale();
- // void playbackSong();
+  void playbackSong();
   static const int NOTEFREQ[8]; 
   static const float PWMFREQUENCY;
   static const int DT = 100;//100us between dac updates for audio
@@ -37,7 +37,7 @@ public:
 };
 
                             // c   d   e   f   g   a   b   c
-const int Harp::NOTEFREQ[] = {262,294,330,349,392,440,494,523};
+const int Harp::NOTEFREQ[] = {120, 200, 280, 380, 480, 580, 680, 880}; // {262,294,330,349,392,440,494,523};
 const float Harp::PWMFREQUENCY = 50000;
 
 Harp::Harp(){//:_ringBufferIndex(0){
@@ -86,7 +86,7 @@ void Harp::updateWeights(){
   digitalWrite(LOAD_PIN, 0);
 
   for (int i = 0; i < 8; ++i) {
-    _noteWeights[i] = float( notes[i] % 127);
+    _noteWeights[i] = notes[i] & 127;
    // if (i != 7) _noteWeights[i] = 0;
   } //delayMicros(10000); // just for debugging
   // Then normalize.
@@ -94,38 +94,39 @@ void Harp::updateWeights(){
   float sum = 0;
   for (int i = 0; i < 8; ++i) sum +=_noteWeights[i];
   for (int i = 0; i < 8; ++i) {
-   //if (_noteWeights[i] < 100) _noteWeights[i] == 0;
-   _noteWeights[i] = sum == 0 ? 0: _noteWeights[i] / ( 2 * sum);
-  }
+   if (_noteWeights[i] < 100) _noteWeights[i] == 0;
+     _noteWeights[i] = sum == 0 ? 0: _noteWeights[i] / ( 2 * sum);
+ }
 //  _allNoteWeights[_ringBufferIndex % _allNoteWeights.size()] = _noteWeights;
 
 }
-/*
+
 void Harp::playbackSong() {
   int timePassed = 0;
   for (int i = 0; i < _recordedSong.size(); ++i) {
+    printf("playing Song %d\n", i);
+    delayMicros(DT); 
     _noteWeights = _recordedSong[i];
     writeNoteValue(timePassed);
-    timePassed += DT;
+    timePassed +=  DT;
   }
-}*/
+}
 
 // Function for continous operation of the harp playing music. Add exit condition.
 void Harp::runHarp(){
   unsigned long timePassed = 0;
+  unsigned long counter = 0;
   while (true) {
- /*
+
     bool isRecording = digitalRead(RECORD_PIN);
     if (digitalRead(PLAY_PIN) && !isRecording) {
        playbackSong();
-       printf("playing Song");  
-       return;
     }
     if (!isRecording) {
-      _recordedSong.clear();   
+      //_recordedSong.clear();   
     }
     _ringBufferIndex++;
-   */
+   
     updateWeights();
     /*
     for (int i = 0; i < 8; ++i){
@@ -137,33 +138,37 @@ void Harp::runHarp(){
     //  _noteWeights[i] = (sum < 0.10) ? 0 : sum;
     }
     */
-    printf("The weights of each string are: ");
-    for (int i = 0; i < 8; ++i) {
-       printf("%f ", _noteWeights[i]);
-    }
-    printf("\n");
-    /*
-     * if (isRecording) {
-      _recordedSong.push_back(_noteWeights);
-      //printf("isRecording\n");
+    //printf("The weights of each string are: ");
+    //for (int i = 0; i < 8; ++i) {
+    //   printf("%f ", _noteWeights[i]);
+    //}
+    //printf("\n");
+    
+    if (isRecording) {
+   //   if (counter == 20) {
+        _recordedSong.push_back(_noteWeights);
+        printf("isRecording\n");
+        counter = 0;
+   //   }
       //printf("_recordedSong size %d \n", _recordedSong.size());
-    }*/
-      delayMicros(DT);
+      ++counter;
+    }
+    delayMicros(DT);
     timePassed += DT;
     writeNoteValue(timePassed);
   }
-  //printf("exiting\n");
+  printf("exiting\n");
 }
 
 void Harp::testScale() {
   float noteset1[] = {.2,0,0,0,0,0,0,0};
-  std::copy(noteset1,noteset1+8, _noteWeights);
+  std::copy(noteset1,noteset1+8, _noteWeights.begin());
   playNotes(5000000,0);
   for (int i=0; i<7; ++i){
     std::swap(_noteWeights[i],_noteWeights[i+1]);
     playNotes(5000000,0);
   }
-  std::copy(noteset1, noteset1 + 8, _noteWeights);
+  std::copy(noteset1, noteset1 + 8, _noteWeights.begin());
   _noteWeights[7] = 0.2;
 
   playNotes(5000000,0);
