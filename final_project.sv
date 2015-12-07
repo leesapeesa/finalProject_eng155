@@ -64,18 +64,17 @@ module oscillateMirror2(input logic clk, reset,
 		if (reset) begin // Reset all registers to default
 			turns <= 4'b0001;
 			stepCount = 3'b0;
-			notes <= 3'b000;
 			forward = 1'b1; // Note blocking equals
 			moving<=1'b0;
 			nextCounter = 19'b0;
 		end
 		
 		// Take steps at two different points along the time interval
-		if (moving&&((counter[17:0] == 18'h0FFFF)||(counter[17:0] == 18'h1FFFF))) begin
+		if (moving&&((counter[17:0] == 18'h18000)||(counter[17:0] == 18'h02000))) begin
 		turns <= forward ? {turns[2:0], turns[3]} : {turns[0], turns[3:1]};
 		end
 		// Once we hit end travel time, switch to hold mode
-		if (moving&&(counter[17:0] == 18'h2A000)) begin
+		if (moving&&(counter[17:0] == 18'h2F000)) begin
 			nextCounter = 0; // We need blocking
 			moving <= 1'b0;
 			stepCount = forward? stepCount + 1'b1:stepCount - 1'b1;
@@ -84,7 +83,7 @@ module oscillateMirror2(input logic clk, reset,
 			end
 		end
 		// Once we have held position for long enough, switch back to moving
-		if ((~moving)&&(counter==19'h4FFFF)) begin
+		if ((~moving)&&(counter==19'h3E000)) begin
 			moving <= 1'b1;
 			nextCounter = 0; // Blocking
 		end
@@ -94,7 +93,7 @@ module oscillateMirror2(input logic clk, reset,
 	assign stepperWires = turns; // Output to H-Bridge
 	assign currentNote = stepCount[2:0]; // Which of 8 positions we are at
 	assign laserControl = ~moving && (counter > 19'h00FFF && counter < 19'h4F000); // When stopped
-	assign ADCload = ~moving && (counter>100000)&&(counter<100010); // Sometime while we are stopped
+	assign ADCload = ~moving && (counter>200000)&&(counter<200010); // Sometime while we are stopped
 endmodule
 
 
