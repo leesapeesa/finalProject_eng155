@@ -199,6 +199,4 @@ int main() {
   Harp myHarp; 
   myHarp.runHarp();
   //myHarp.testScale();
-  //setPWM(500,.5);
-  //delayMicros(10000000);
 }
