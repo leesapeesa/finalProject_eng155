@@ -9,7 +9,6 @@
 
 #define LOAD_PIN 26
 #define SOUND_PIN 18
-#define EXIT_PIN 6
 #define PLAY_PIN 24
 #define RECORD_PIN 25
 #define PLAY_LED 4
