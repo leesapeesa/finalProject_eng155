@@ -143,15 +143,15 @@ void Harp::runHarp(){
         sum += _allNoteWeights[j][i];
       }
       sum /= _allNoteWeights.size();
-      _noteWeights[i] =  sum;
+      _noteWeights[i] = sum;
     }
-   /* 
+    
     printf("The weights of each string are: ");
     for (int i = 0; i < 8; ++i) {
        printf("%f ", _noteWeights[i]);
     }
     printf("\n");
-   */
+   
     if (isRecording) {
       if (!_recordedSong.empty()) _recordedSong.clear();
       currentlyRecording.push_back(_noteWeights);
@@ -176,14 +176,10 @@ void Harp::testScale() {
   std::copy(noteset1, noteset1 + 8, _noteWeights.begin());
   _noteWeights[7] = 0.2;
 
-  playNotes(5000000,0);
-  
-  
+  playNotes(5000000,0);  
   // testing.
 }
-// STRETCH: Send notes + duration to FPGA
-// STRETCH: Keep track of length of note.
-// STRETCH: Playback and play mode.
+
 int main() {
   pioInit();
   pwmInit();
