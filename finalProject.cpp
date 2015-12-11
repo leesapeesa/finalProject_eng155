@@ -162,13 +162,7 @@ void Harp::runHarp(){
      // printf("isRecording\n");
       justTurnedOffRecording = true;
     }
-    /* 
-    printf("The weights of each string are: ");
-    for (int i = 0; i < 8; ++i) {
-       printf("%f ", _noteWeights[i]);
-    }
-    printf("\n");
-    */
+    
     writeNoteValue(timePassed);
     timePassed += DT;
     delayMicros(DT);
